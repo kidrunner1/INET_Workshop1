@@ -10,15 +10,7 @@ REST API สำหรับร้านค้าออนไลน์ พัฒ�
    npm install
    ```
 
-2. สร้างไฟล์ `.env` ที่โฟลเดอร์หลัก และกำหนดค่าตามสภาพแวดล้อมของคุณ:
-
-   ```env
-   PORT=3000
-   MONGODB_URI=mongodb://127.0.0.1:27017/ecommerce
-   JWT_SECRET=replace_with_a_long_random_secret
-   ```
-
-3. เริ่มเซิร์ฟเวอร์สำหรับพัฒนา:
+2. เริ่มเซิร์ฟเวอร์สำหรับพัฒนา:
 
    ```bash
    npm run dev
