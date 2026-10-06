@@ -1,21 +1,71 @@
-# E-commerce Backend API
+# Express MongoDB Shop API
 
-REST API สำหรับร้านค้าออนไลน์ พัฒนาด้วย Node.js, Express และ MongoDB รองรับระบบสมาชิก การยืนยันตัวตนด้วย JWT และการจัดการสินค้าและคำสั่งซื้อ
+Backend REST API for a simple shop management system built with Node.js, Express, MongoDB, and Mongoose.
 
-## เริ่มใช้งาน
+This project includes user authentication, user approval, role-based authorization, product management, order management, and stock validation.
 
-1. ติดตั้ง Node.js และเตรียม MongoDB จากนั้นติดตั้ง dependencies:
+---
 
-   ```bash
-   npm install
-   ```
+## Features
 
-2. เริ่มเซิร์ฟเวอร์สำหรับพัฒนา:
+- User Registration
+- User Login
+- User Approval
+- Password Hashing with bcrypt
+- Authentication with JWT
+- Role-based Authorization
+  - User
+  - Admin
+- Product CRUD
+- Create Orders
+- Get Orders
+- Check Product Stock before creating an Order
+- Automatically reduce Product stock after a successful Order
 
-   ```bash
-   npm run dev
-   ```
+---
 
-API ใช้ URL หลัก `http://localhost:3000/api/v1` หรือรันด้วย `npm start` เมื่อต้องการเริ่มเซิร์ฟเวอร์โดยไม่ใช้ nodemon
+## Tech Stack
 
-ไฟล์ `.env` และ `node_modules` ถูกยกเว้นจาก Git ด้วย `.gitignore`
+- Node.js
+- Express.js
+- MongoDB
+- Mongoose
+- JWT
+- bcrypt
+- dotenv
+- Postman
+
+---
+
+## Project Structure
+
+```text
+src/
+├── config/
+│   └── database.js
+│
+├── controllers/
+│   ├── auth.controller.js
+│   ├── user.controller.js
+│   ├── product.controller.js
+│   └── order.controller.js
+│
+├── middlewares/
+│   └── auth.middleware.js
+│
+├── models/
+│   ├── user.model.js
+│   ├── product.model.js
+│   └── order.model.js
+│
+├── routes/
+│   ├── user/
+│   │   ├── auth.route.js
+│   │   └── user.route.js
+│   │
+│   └── manager/
+│       ├── product.route.js
+│       └── order.route.js
+│
+├── app.js
+└── server.js
