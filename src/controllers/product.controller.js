@@ -225,7 +225,7 @@ const deleteProduct = async (req, res) => {
 
         return res.status(200).json({
             status: 200,
-            message: "deleted สำเร็จfully",
+            message: "ลบรายการสินค้าสำเร็จ",
             data: product
         });
 
