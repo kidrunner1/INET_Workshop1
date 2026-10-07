@@ -18,7 +18,7 @@ const approveUser = async (req, res) => {
         if (!user) {
             return res.status(400).json({
                 status: 400,
-                message: "ชื่อผู้ใช้ หรือ รหัสผ่าน ไม่ถูกต้อง",
+                message: "ไม่พบผู้ใช้งานนี้",
                 data: null
             });
         }
