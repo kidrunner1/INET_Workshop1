@@ -110,6 +110,7 @@ const createProductOrder = async (req, res) => {
 
         const order = await Order.create({
             productId: product._id,
+            name: product.name,
             quantity,
             price: product.price,
             totalPrice
