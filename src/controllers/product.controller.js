@@ -64,7 +64,7 @@ const createProduct = async (req, res) => {
 
         return res.status(201).json({
             status: 201,
-            message: "สร้างรายการสำเร็จ",
+            message: "สร้างรายการสินค้าสำเร็จ",
             data: product
         });
 
