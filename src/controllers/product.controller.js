@@ -184,7 +184,7 @@ const updateProduct = async (req, res) => {
 
         return res.status(200).json({
             status: 200,
-            message: "updated สำเร็จfully",
+            message: "อัปเดตรายการสินค้าสำเร็จ",
             data: product
         });
 
