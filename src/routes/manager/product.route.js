@@ -1,7 +1,15 @@
 // src/routes/product.route.js
 
 const express = require("express");
+const validateRequest =
+    require("../../middlewares/validate.middleware");
 
+const {
+    createProductSchema,
+    updateProductSchema,
+    productIdParamSchema,
+    productQuerySchema
+} = require("../../validations/request.schemas");
 const {
     getProducts,
     createProduct,
@@ -23,6 +31,7 @@ const router = express.Router();
 router.get(
     "/products",
     authMiddleware,
+    validateRequest(productQuerySchema),
     getProducts
 );
 
@@ -33,6 +42,7 @@ router.post(
     "/products",
     authMiddleware,
     adminMiddleware,
+    validateRequest(createProductSchema),
     createProduct
 );
 
@@ -41,6 +51,7 @@ router.post(
 router.get(
     "/products/:id",
     authMiddleware,
+    validateRequest(productIdParamSchema),
     getProductById
 );
 
@@ -50,6 +61,7 @@ router.put(
     "/products/:id",
     authMiddleware,
     adminMiddleware,
+    validateRequest(updateProductSchema),
     updateProduct
 );
 
@@ -59,6 +71,7 @@ router.delete(
     "/products/:id",
     authMiddleware,
     adminMiddleware,
+    validateRequest(productIdParamSchema),
     deleteProduct
 );
 

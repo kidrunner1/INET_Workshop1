@@ -1,128 +1,183 @@
-const Order = require("../models/order.model");
 const mongoose = require("mongoose");
+
+const Order = require("../models/order.model");
+const Cart = require("../models/cart.model");
 const Product = require("../models/product.model");
 
-const getOrders = async (req, res) => {
+const checkout = async (req, res) => {
+    const session = await mongoose.startSession();
+
     try {
-        const orders = await Order.find();
+        session.startTransaction();
 
-        return res.status(200).json({
-            status: 200,
-            message: "สำเร็จ",
-            data: orders
-        });
+        const userId = req.user.id;
 
-    } catch (error) {
-        console.error(error);
+        // 1. หา Cart ของ User
+        const cart = await Cart.findOne({
+            userId
+        }).session(session);
 
-        return res.status(500).json({
-            status: 500,
-            message: "ขออภัย ระบบขัดข้องชั่วคราว กรุณาทำรายการใหม่อีกครั้ง",
-            data: null
-        });
-    }
-};
+        if (!cart || cart.items.length === 0) {
+            await session.abortTransaction();
 
-
-const getProductOrders = async (req, res) => {
-    try {
-        const { id } = req.params;
-
-        if (!mongoose.Types.ObjectId.isValid(id)) {
             return res.status(400).json({
                 status: 400,
-                message: "ไม่พบสินค้า",
+                message: "cart is empty",
                 data: null
             });
         }
 
-        const product = await Product.findById(id);
+        const orderItems = [];
+        let totalPrice = 0;
 
-        if (!product) {
-            return res.status(400).json({
-                status: 400,
-                message: "ไม่พบสินค้า",
-                data: null
+        // 2. ตรวจและลด Stock ทีละสินค้า
+        for (const cartItem of cart.items) {
+            /*
+              ใช้เงื่อนไข stock >= quantity
+              เพื่อป้องกันการซื้อเกิน Stock
+            */
+            const product = await Product.findOneAndUpdate(
+                {
+                    _id: cartItem.productId,
+                    stock: {
+                        $gte: cartItem.quantity
+                    }
+                },
+                {
+                    $inc: {
+                        stock: -cartItem.quantity
+                    }
+                },
+                {
+                    new: true,
+                    session
+                }
+            );
+
+            if (!product) {
+                await session.abortTransaction();
+
+                return res.status(400).json({
+                    status: 400,
+                    message: "product not found or insufficient stock",
+                    data: null
+                });
+            }
+
+            const subtotal =
+                product.price * cartItem.quantity;
+
+            orderItems.push({
+                productId: product._id,
+                name: product.name,
+                price: product.price,
+                quantity: cartItem.quantity,
+                subtotal
             });
+
+            totalPrice += subtotal;
         }
 
-        const orders = await Order.find({
-            productId: id
+        // 3. สร้าง Order
+        const order = new Order({
+            userId,
+            items: orderItems,
+            totalPrice,
+            status: "pending"
         });
 
-        return res.status(200).json({
-            status: 200,
-            message: "สำเร็จ",
-            data: orders
+        await order.save({
+            session
         });
 
-    } catch (error) {
-        console.error(error);
+        // 4. ล้าง Cart
+        cart.items = [];
 
-        return res.status(500).json({
-            status: 500,
-            message: "ขออภัย ระบบขัดข้องชั่วคราว กรุณาทำรายการใหม่อีกครั้ง",
-            data: null
-        });
-    }
-};
-
-const createProductOrder = async (req, res) => {
-    try {
-        const { id } = req.params;
-        const { quantity } = req.body;
-
-        if (!mongoose.Types.ObjectId.isValid(id)) {
-            return res.status(400).json({
-                status: 400,
-                message: "ไม่พบสินค้า",
-                data: null
-            });
-        }
-
-        const product = await Product.findById(id);
-
-        if (!product) {
-            return res.status(400).json({
-                status: 400,
-                message: "ไม่พบสินค้า",
-                data: null
-            });
-        }
-
-        if (!Number.isInteger(quantity) || quantity <= 0) {
-            return res.status(400).json({
-                status: 400,
-                message: "• กรุณาระบุจำนวนสินค้าให้ถูกต้อง",
-                data: null
-            });
-        }
-
-        if (quantity > product.stock) {
-            return res.status(400).json({
-                status: 400,
-                message: "จำนวนสินค้าไม่เพียงพอ",
-                data: null
-            });
-        }
-
-        const totalPrice = product.price * quantity;
-
-        const order = await Order.create({
-            productId: product._id,
-            name: product.name,
-            quantity,
-            price: product.price,
-            totalPrice
+        await cart.save({
+            session
         });
 
-        product.stock = product.stock - quantity;
-
-        await product.save();
+        // 5. ทุกอย่างผ่าน
+        await session.commitTransaction();
 
         return res.status(201).json({
             status: 201,
-            message: "สร้างรายการสำเร็จ",
+            message: "order created successfully",
+            data: order
+        });
+
+    } catch (error) {
+        await session.abortTransaction();
+
+        console.error(error);
+
+        return res.status(500).json({
+            status: 500,
+            message: "internal server error",
+            data: null
+        });
+
+    } finally {
+        await session.endSession();
+    }
+};
+
+const getMyOrders = async (req, res) => {
+    try {
+        const userId = req.user.id;
+
+        const orders = await Order.find({
+            userId
+        }).sort({
+            createdAt: -1
+        });
+
+        return res.status(200).json({
+            status: 200,
+            message: "success",
+            data: orders
+        });
+
+    } catch (error) {
+        console.error(error);
+
+        return res.status(500).json({
+            status: 500,
+            message: "internal server error",
+            data: null
+        });
+    }
+};
+
+const getMyOrderById = async (req, res) => {
+    try {
+        const userId = req.user.id;
+        const { id } = req.params;
+
+        if (!mongoose.isValidObjectId(id)) {
+            return res.status(400).json({
+                status: 400,
+                message: "invalid order id",
+                data: null
+            });
+        }
+
+        const order = await Order.findOne({
+            _id: id,
+            userId
+        });
+
+        if (!order) {
+            return res.status(400).json({
+                status: 400,
+                message: "order not found",
+                data: null
+            });
+        }
+
+        return res.status(200).json({
+            status: 200,
+            message: "success",
             data: order
         });
 
@@ -131,14 +186,15 @@ const createProductOrder = async (req, res) => {
 
         return res.status(500).json({
             status: 500,
-            message: "ขออภัย ระบบขัดข้องชั่วคราว กรุณาทำรายการใหม่อีกครั้ง",
+            message: "internal server error",
             data: null
         });
     }
 };
 
 module.exports = {
-    getOrders,
-    getProductOrders,
-    createProductOrder
+    checkout,
+    getMyOrders,
+    getMyOrderById
+
 };

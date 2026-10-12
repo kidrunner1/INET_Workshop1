@@ -58,6 +58,34 @@ const approveUser = async (req, res) => {
     }
 };
 
+const getUsers = async (req, res) => {
+    try {
+        const users = await User.find()
+            .select(
+                "_id username role status createdAt updatedAt"
+            )
+            .sort({
+                createdAt: -1
+            });
+
+        return res.status(200).json({
+            status: 200,
+            message: "success",
+            data: users
+        });
+
+    } catch (error) {
+        console.error(error);
+
+        return res.status(500).json({
+            status: 500,
+            message: "internal server error",
+            data: null
+        });
+    }
+};
+
 module.exports = {
-    approveUser
+    approveUser,
+    getUsers
 };

@@ -3,12 +3,56 @@ const mongoose = require("mongoose");
 
 const getProducts = async (req, res) => {
     try {
-        const products = await Product.find();
+        const {
+            search = "",
+            category = "",
+            page = 1,
+            limit = 12
+        } = req.query;
+
+        const pageNumber = Number(page);
+        const limitNumber = Number(limit);
+
+        const filter = {};
+
+        if (search.trim()) {
+            filter.name = {
+                $regex: search.trim(),
+                $options: "i"
+            };
+        }
+
+        if (category.trim()) {
+            filter.category = category.trim();
+        }
+
+        const skip =
+            (pageNumber - 1) * limitNumber;
+
+        const [products, total] = await Promise.all([
+            Product.find(filter)
+                .sort({ createdAt: -1 })
+                .skip(skip)
+                .limit(limitNumber),
+
+            Product.countDocuments(filter)
+        ]);
+
+        const totalPages =
+            Math.ceil(total / limitNumber);
 
         return res.status(200).json({
             status: 200,
-            message: "สำเร็จ",
-            data: products
+            message: "success",
+            data: {
+                products,
+                pagination: {
+                    page: pageNumber,
+                    limit: limitNumber,
+                    total,
+                    totalPages
+                }
+            }
         });
 
     } catch (error) {
@@ -16,7 +60,7 @@ const getProducts = async (req, res) => {
 
         return res.status(500).json({
             status: 500,
-            message: "ขออภัย ระบบขัดข้องชั่วคราว กรุณาทำรายการใหม่อีกครั้ง",
+            message: "internal server error",
             data: null
         });
     }
@@ -28,7 +72,9 @@ const createProduct = async (req, res) => {
             name,
             price,
             stock,
-            description
+            description,
+            imageUrl,
+            category
         } = req.body;
 
         if (!name || price === undefined || stock === undefined) {
@@ -59,7 +105,9 @@ const createProduct = async (req, res) => {
             name,
             price,
             stock,
-            description
+            description,
+            imageUrl,
+            category
         });
 
         return res.status(201).json({
@@ -126,7 +174,9 @@ const updateProduct = async (req, res) => {
             name,
             price,
             stock,
-            description
+            description,
+            imageUrl,
+            category
         } = req.body;
 
         if (!mongoose.Types.ObjectId.isValid(id)) {
@@ -179,6 +229,8 @@ const updateProduct = async (req, res) => {
         product.price = price;
         product.stock = stock;
         product.description = description ?? "";
+        product.imageUrl = imageUrl ?? "";
+        product.category = category ?? "general";
 
         await product.save();
 

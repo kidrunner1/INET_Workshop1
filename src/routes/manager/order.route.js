@@ -1,33 +1,45 @@
 const express = require("express");
 
 const {
-    getOrders,
-    getProductOrders,
-    createProductOrder
-} = require("../../controllers/order.controller");
+    getAllOrders,
+    getOrderById,
+    updateOrderStatus
+} = require("../../controllers/adminOrder.controller");
 
 const {
-    authMiddleware
+    authMiddleware,
+    adminMiddleware
 } = require("../../middlewares/auth.middleware");
+const validateRequest =
+    require("../../middlewares/validate.middleware");
 
+const {
+    orderIdParamSchema,
+    updateOrderStatusSchema
+} = require("../../validations/request.schemas");
 const router = express.Router();
 
 router.get(
-    "/orders",
+    "/admin/orders",
     authMiddleware,
-    getOrders
+    adminMiddleware,
+    getAllOrders
 );
 
 router.get(
-    "/products/:id/orders",
+    "/admin/orders/:id",
     authMiddleware,
-    getProductOrders
+    adminMiddleware,
+    validateRequest(orderIdParamSchema),
+    getOrderById
 );
 
-router.post(
-    "/products/:id/orders",
+router.put(
+    "/admin/orders/:id/status",
     authMiddleware,
-    createProductOrder
+    adminMiddleware,
+    validateRequest(updateOrderStatusSchema),
+    updateOrderStatus
 );
 
 module.exports = router;
