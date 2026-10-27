@@ -4,52 +4,45 @@ const jwt = require("jsonwebtoken");
 
 const registerUser = async (req, res) => {
     try {
-        const { username, password } = req.body;
-
-        if (!username || !password) {
-            return res.status(400).json({
-                status: 400,
-                message: "Username และ Password ต้องไม่ว่าง",
-                data: null
-            });
-        }
-
-        const existingUser = await User.findOne({ username });
+        const { username, password, firstName, lastName, email, phone } = req.body;
+        // Wait for unique indexes before accepting a new account.
+        await User.init();
+        const existingUser = await User.findOne({ $or: [{ username }, { email }] });
         if (existingUser) {
-            return res.status(400).json({
-                status: 400,
-                message: "Username นี้มีผู้ใช้งานแล้ว",
-                data: null
+            const field = existingUser.username === username ? "username" : "email";
+            const message = field === "username" ? "ชื่อผู้ใช้นี้มีผู้ใช้งานแล้ว" : "อีเมลนี้มีผู้ใช้งานแล้ว";
+            return res.status(409).json({
+                status: 409, message, data: [{ field: "body." + field, message }],
             });
         }
-
-        const hashedPassword = await bcrypt.hash(password, 10);
-
         const user = await User.create({
-            username,
-            password: hashedPassword
+            username, firstName, lastName, email, phone: phone || undefined,
+            password: await bcrypt.hash(password, 10),
+            role: "user", status: "pending",
         });
-
         return res.status(201).json({
-            status: 201,
-            message: "ผู้ใช้งานถูกสร้างเรียบร้อยแล้ว",
+            status: 201, message: "สมัครสมาชิกสำเร็จ กรุณารอแอดมินอนุมัติบัญชี",
             data: {
-                _id: user._id,
-                username: user.username,
-                role: user.role,
-                status: user.status,
-                createdAt: user.createdAt,
-
-            }
-        })
-    } catch (err) {
+                _id: user._id, username: user.username,
+                firstName: user.firstName, lastName: user.lastName,
+                email: user.email, phone: user.phone,
+                role: user.role, status: user.status,
+                createdAt: user.createdAt, updatedAt: user.updatedAt,
+            },
+        });
+    } catch (error) {
+        if (error.code === 11000) {
+            const field = error.keyPattern?.email ? "email" : "username";
+            const message = field === "email" ? "อีเมลนี้มีผู้ใช้งานแล้ว" : "ชื่อผู้ใช้นี้มีผู้ใช้งานแล้ว";
+            return res.status(409).json({
+                status: 409, message, data: [{ field: "body." + field, message }],
+            });
+        }
         return res.status(500).json({
-            status: 500,
-            message: "เกิดข้อผิดพลาดในการสร้างผู้ใช้งาน",
-            data: null
-        })
+            status: 500, message: "เกิดข้อผิดพลาดในการสร้างผู้ใช้งาน กรุณาลองอีกครั้ง", data: null,
+        });
     }
-}
+};
 
 const LoginUser = async (req, res) => {
     try {
@@ -110,7 +103,7 @@ const LoginUser = async (req, res) => {
                 token,
                 user: {
                     _id: user._id,
-                    username: user.username,
+                    username: user.username, firstName: user.firstName, lastName: user.lastName, email: user.email, phone: user.phone,
                     role: user.role,
                     status: user.status
                 }

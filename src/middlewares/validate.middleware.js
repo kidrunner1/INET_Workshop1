@@ -19,6 +19,8 @@ const validateRequest = (schema) => {
             });
         }
 
+        // Pass validated/normalized body values to controllers.
+        if (result.data.body !== undefined) req.body = result.data.body;
         next();
     };
 };

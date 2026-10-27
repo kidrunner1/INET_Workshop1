@@ -10,20 +10,18 @@ const objectId = z
 // ===============================
 
 const registerSchema = z.object({
-    body: z
-        .object({
-            username: z
-                .string()
-                .trim()
-                .min(3, "username must be at least 3 characters")
-                .max(50, "username is too long"),
-
-            password: z
-                .string()
-                .min(6, "password must be at least 6 characters")
-                .max(100, "password is too long")
-        })
-        .strict()
+    body: z.object({
+        username: z.string().trim().min(3, "ชื่อผู้ใช้ต้องมี 3–50 ตัวอักษร").max(50, "ชื่อผู้ใช้ต้องมี 3–50 ตัวอักษร"),
+        firstName: z.string().trim().min(1, "กรุณากรอกชื่อ").max(80, "ชื่อต้องไม่เกิน 80 ตัวอักษร"),
+        lastName: z.string().trim().min(1, "กรุณากรอกนามสกุล").max(80, "นามสกุลต้องไม่เกิน 80 ตัวอักษร"),
+        email: z.string().trim().toLowerCase().max(254, "อีเมลยาวเกินไป").email("กรุณากรอกอีเมลให้ถูกต้อง"),
+        phone: z.string().trim().max(30, "เบอร์โทรยาวเกินไป")
+            .transform((value) => value.replace(/[\s()-]/g, ""))
+            .refine((value) => !value || /^\+?[0-9]{8,15}$/.test(value), "เบอร์โทรต้องมี 8–15 หลัก ใส่ + รหัสประเทศได้")
+            .optional(),
+        password: z.string().min(8, "รหัสผ่านต้องมีอย่างน้อย 8 ตัวอักษร")
+            .refine((value) => Buffer.byteLength(value, "utf8") <= 72, "รหัสผ่านยาวเกินไป กรุณาลดจำนวนตัวอักษรหรืออีโมจิ")
+    }).strict()
 });
 
 const loginSchema = z.object({

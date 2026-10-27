@@ -21,6 +21,7 @@ const adminOrderRoutes =
 
 const cors = require("cors");
 const app = express();
+const { PRODUCT_IMAGE_DIR } = require("./config/uploads");
 
 app.use(cors({
     origin: process.env.CLIENT_URL,
@@ -32,6 +33,16 @@ app.use(cors({
 }));
 
 app.use(express.json());
+
+app.use("/uploads/products", express.static(PRODUCT_IMAGE_DIR, {
+    index: false,
+    dotfiles: "deny",
+    maxAge: "30d",
+    immutable: true,
+    setHeaders: (res) => {
+        res.setHeader("X-Content-Type-Options", "nosniff");
+    },
+}));
 
 app.use("/api/v1", authRoutes);
 app.use("/api/v1", userRoutes);

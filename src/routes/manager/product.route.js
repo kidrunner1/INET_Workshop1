@@ -24,13 +24,22 @@ const {
 } = require("../../middlewares/auth.middleware");
 
 const router = express.Router();
+const parseProductImage = require("../../middlewares/product-image.middleware");
+const { uploadProductImage } = require("../../controllers/product-image.controller");
+
+router.post(
+    "/products/image",
+    authMiddleware,
+    adminMiddleware,
+    parseProductImage,
+    uploadProductImage
+);
 
 
 // ดู Product ทั้งหมด
-// user และ admin ดูได้
+// Public: visitors can browse without logging in
 router.get(
     "/products",
-    authMiddleware,
     validateRequest(productQuerySchema),
     getProducts
 );
@@ -47,10 +56,9 @@ router.post(
 );
 
 // ดู Product 1 รายการ
-// user และ admin ดูได้
+// Public: visitors can browse without logging in
 router.get(
     "/products/:id",
-    authMiddleware,
     validateRequest(productIdParamSchema),
     getProductById
 );

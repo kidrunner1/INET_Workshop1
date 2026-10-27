@@ -40,7 +40,7 @@ const approveUser = async (req, res) => {
             message: "ผู้ใช้งานได้รับการอนุมัติเรียบร้อยแล้ว",
             data: {
                 _id: user._id,
-                username: user.username,
+                username: user.username, firstName: user.firstName, lastName: user.lastName, email: user.email, phone: user.phone, createdAt: user.createdAt,
                 role: user.role,
                 status: user.status,
                 updatedAt: user.updatedAt
@@ -62,7 +62,7 @@ const getUsers = async (req, res) => {
     try {
         const users = await User.find()
             .select(
-                "_id username role status createdAt updatedAt"
+                "_id username firstName lastName email phone role status createdAt updatedAt"
             )
             .sort({
                 createdAt: -1
